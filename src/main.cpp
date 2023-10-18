@@ -18,7 +18,7 @@
 #define WIFI_PASSWORD "tajesgrist44107"
 
 // Raspberri Pi Mosquitto MQTT Broker
-#define MQTT_HOST IPAddress(27, 32, 148, 185)
+#define MQTT_HOST "spotifynr.duckdns.org" //IPAddress(27, 32, 148, 185)
 // For a cloud MQTT broker, type the domain name
 //#define MQTT_HOST "example.com"
 #define MQTT_PORT 1884
