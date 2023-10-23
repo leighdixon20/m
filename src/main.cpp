@@ -1,18 +1,29 @@
 /*
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp8266-nodemcu-mqtt-publish-dht11-dht22-arduino/
-  
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files.
-  
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
+OLED CODE
 */
 
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+/*
+Temp reading Code
+*/
 #include "DHT.h"
 #include <ESP8266WiFi.h>
 #include <Ticker.h>
 #include <AsyncMqttClient.h>
+
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// Declaration for SSD1306 display connected using I2C
+#define OLED_RESET     -1 // Reset pin
+#define SCREEN_ADDRESS 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 
 #define WIFI_SSID "OPTUS_48EA0C"
 #define WIFI_PASSWORD "tajesgrist44107"
@@ -24,10 +35,13 @@
 #define MQTT_PORT 1884
 
 // Temperature MQTT Topics
-#define MQTT_PUB_TEMP1 "esp3/dht1/temperature"
-#define MQTT_PUB_HUM1 "esp3/dht1/humidity"
-#define MQTT_PUB_TEMP2 "esp3/dht2/temperature"
-#define MQTT_PUB_HUM2 "esp3/dht2/humidity"
+//ESP1 = Study
+//ESP2 = Lounge
+//ESP3 = Bedroom
+#define MQTT_PUB_TEMP1 "esp1/dht1/temperature"
+#define MQTT_PUB_HUM1 "esp1/dht1/humidity"
+#define MQTT_PUB_TEMP2 "esp1/dht2/temperature"
+#define MQTT_PUB_HUM2 "esp1/dht2/humidity"
 
 // Digital pin connected to the DHT sensor
 #define DHTPIN1 D5
@@ -125,16 +139,30 @@ void onMqttPublish(uint16_t packetId) {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println();
 
+  //Setup OLED Display
+  Serial.println();
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  delay(2000);
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+
+
+//Setup Temperature Sensor Pins
   pinMode(2, OUTPUT);    // LED pin as output.
   dht1.begin();
   dht2.begin();
   
+
+//Handle Wifi
   wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
   wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
   WiFi.setPhyMode(WIFI_PHY_MODE_11B);
   
+//Setup MQTT Client info
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
   //mqttClient.onSubscribe(onMqttSubscribe);
@@ -164,6 +192,7 @@ void loop() {
     // Read temperature as Celsius (the default)
     temp1 = dht1.readTemperature();
     temp2 = dht2.readTemperature();
+      
     // Read temperature as Fahrenheit (isFahrenheit = true)
     //temp = dht.readTemperature(true);
     digitalWrite(2, HIGH);// turn the LED off.
@@ -180,6 +209,35 @@ void loop() {
     Serial.printf("Publishing on topic %s at QoS 1, packetId %i: ", MQTT_PUB_HUM1, packetIdPub3);
     Serial.printf("Publishing on topic %s at QoS 1, packetId %i: ", MQTT_PUB_HUM2, packetIdPub4);
     Serial.printf("Message: %.2f \n", hum1);
+
+
+// clear display
+  display.clearDisplay();
+  
+  // display temperature
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.print("Temperature: ");
+  display.setTextSize(2);
+  display.setCursor(0,10);
+  display.print(temp2);
+  display.print(" ");
+  display.setTextSize(1);
+  display.cp437(true);
+  display.write(167);
+  display.setTextSize(2);
+  display.print("C");
+  
+  // display humidity
+  display.setTextSize(1);
+  display.setCursor(0, 35);
+  display.print("Humidity: ");
+  display.setTextSize(2);
+  display.setCursor(0, 45);
+  display.print(hum2);
+  display.print(" %"); 
+  
+  display.display(); 
 
 
  if (WiFi.isConnected()) {
